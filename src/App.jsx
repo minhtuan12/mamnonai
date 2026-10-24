@@ -11,8 +11,6 @@ import {
 // ==========================================
 // CẤU HÌNH API & TIỆN ÍCH HỖ TRỢ AI THỰC TẾ
 // ==========================================
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
 // Hàm gọi API có cơ chế thử lại (Exponential Backoff)
 async function fetchWithRetry(url, options, maxRetries = 3) {
   let delay = 1000;
@@ -34,7 +32,7 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 
 // 1. Gọi Gemini tạo văn bản có cấu trúc JSON hoặc tự do
 async function generateAIText(prompt, systemInstruction = "", jsonSchema = null) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+  const url = "/api/gemini";
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
@@ -48,7 +46,7 @@ async function generateAIText(prompt, systemInstruction = "", jsonSchema = null)
   const data = await fetchWithRetry(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ model: "gemini-3-flash-preview", payload }),
   });
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error("Không nhận được phản hồi từ AI.");
@@ -57,7 +55,7 @@ async function generateAIText(prompt, systemInstruction = "", jsonSchema = null)
 
 // 2. Gọi Gemini 3.1 Flash Image tạo tranh đồng nhất nhân vật (hỗ trợ truyền ảnh mẫu base64 tham chiếu)
 async function generateAIImage(prompt, aspectRatio = "16:9", referenceImageUrl = null) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
+  const url = "/api/gemini";
   const parts = [{ text: prompt }];
 
   if (referenceImageUrl && referenceImageUrl.startsWith("data:image")) {
@@ -82,7 +80,7 @@ async function generateAIImage(prompt, aspectRatio = "16:9", referenceImageUrl =
   const data = await fetchWithRetry(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ model: "gemini-3.1-flash-image", payload }),
   });
 
   const part = data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
@@ -131,7 +129,7 @@ function pcmToWav(pcm16, sampleRate = 24000) {
 
 // 4. Gọi Gemini TTS tạo giọng đọc tiếng Việt truyền cảm (Đơn giọng hoặc Phân vai)
 async function generateAITTS(text, voiceName = "Aoede", isMultiSpeaker = false) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+  const url = "/api/gemini";
 
   let speechConfig = {
     voiceConfig: {
@@ -162,7 +160,7 @@ async function generateAITTS(text, voiceName = "Aoede", isMultiSpeaker = false) 
   const data = await fetchWithRetry(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ model: "gemini-2.5-flash-preview-tts", payload }),
   });
 
   const part = data?.candidates?.[0]?.content?.parts?.[0];
